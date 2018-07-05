@@ -1,17 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
-from __future__ import print_function
-from builtins import zip
-from builtins import str
 import os
 import string
 import re
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
 import warnings
+
+from builtins import zip
+from builtins import str
+from collections import OrderedDict
 
 import pycrfsuite
 import probableparsing
@@ -46,7 +42,7 @@ LABELS = [
     'USPSBoxGroupID',
     'IntersectionSeparator',
     'Recipient',
-    'NotAddress',
+    'NotAddress'
 ]
 
 PARENT_LABEL = 'AddressString'
@@ -182,8 +178,8 @@ def tag(address_string, tag_mapping=None):
         elif label not in tagged_address:
             tagged_address[label] = [token]
         else:
-            raise RepeatedLabelError(address_string, parse(address_string),
-                                     label)
+            raise RepeatedLabelError(
+                address_string, parse(address_string), label)
 
         last_label = label
 
@@ -212,8 +208,7 @@ def tokenize(address_string):
     \(*\b[^\s,;#&()]+[.,;)\n]*   # ['ab. cd,ef '] -> ['ab.', 'cd,', 'ef']
     |
     [#&]                       # [^'#abc'] -> ['#']
-    """,
-                           re.VERBOSE | re.UNICODE)
+    """, re.VERBOSE | re.UNICODE)
 
     tokens = re_tokens.findall(address_string)
 
@@ -223,49 +218,44 @@ def tokenize(address_string):
     return tokens
 
 
-def tokenFeatures(token):
-    if token in (u'&', u'#', u'½'):
+def token_features(token):
+    if token in ('&', '#', '½'):
         token_clean = token
     else:
-        token_clean = re.sub(r'(^[\W]*)|([^.\w]*$)', u'', token,
-                             flags=re.UNICODE)
+        token_clean = re.sub(
+            r'(^[\W]*)|([^.\w]*$)', '', token, flags=re.UNICODE)
 
-    token_abbrev = re.sub(r'[.]', u'', token_clean.lower())
+    token_abbrev = re.sub(r'[.]', '', token_clean.lower())
     features = {
-        'abbrev': token_clean[-1] == u'.',
+        'abbrev': token_clean[-1] == '.',
         'digits': digits(token_clean),
-        'word': (token_abbrev
-                 if not token_abbrev.isdigit()
-                 else False),
-        'trailing.zeros': (trailingZeros(token_abbrev)
-                           if token_abbrev.isdigit()
-                           else False),
-        'length': (u'd:' + str(len(token_abbrev))
-                   if token_abbrev.isdigit()
-                   else u'w:' + str(len(token_abbrev))),
-        'endsinpunc': (token[-1]
-                       if bool(re.match('.+[^.\w]', token, flags=re.UNICODE))
-                       else False),
+        'word': (token_abbrev if not token_abbrev.isdigit() else False),
+        'trailing.zeros': (trailing_zeros(
+            token_abbrev) if token_abbrev.isdigit() else False),
+        'length': ('d:' + str(len(token_abbrev)) if token_abbrev.isdigit()
+                   else 'w:' + str(len(token_abbrev))),
+        'endsinpunc': (token[-1] if bool(
+            re.match('.+[^.\w]', token, flags=re.UNICODE)) else False),
         'directional': token_abbrev in DIRECTIONS,
         'street_name': token_abbrev in STREET_NAMES,
-        'has.vowels': bool(set(token_abbrev[1:]) & set('aeiou')),
+        'has.vowels': bool(set(token_abbrev[1:]) & set('aeiou'))
     }
 
     return features
 
 
 def tokens2features(address):
-    feature_sequence = [tokenFeatures(address[0])]
+    feature_sequence = [token_features(address[0])]
     previous_features = feature_sequence[-1].copy()
 
     for token in address[1:]:
-        token_features = tokenFeatures(token)
-        current_features = token_features.copy()
+        features = token_features(token)
+        current_features = features.copy()
 
         feature_sequence[-1]['next'] = current_features
-        token_features['previous'] = previous_features
+        features['previous'] = previous_features
 
-        feature_sequence.append(token_features)
+        feature_sequence.append(features)
 
         previous_features = current_features
 
@@ -288,7 +278,7 @@ def digits(token):
         return 'no_digits'
 
 
-def trailingZeros(token):
+def trailing_zeros(token):
     results = re.findall(r'(0+)$', token)
     if results:
         return results[0]

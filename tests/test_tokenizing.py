@@ -1,9 +1,9 @@
-from usaddress import tokenize
 import unittest
+
+from usaddress import tokenize
 
 
 class TestTokenizing(unittest.TestCase):
-
     def test_hash(self):
         self.assertEqual(
             tokenize('# 1 abc st'),
